@@ -14,6 +14,7 @@ import {
   RecentActionsCard,
 } from "@/components/dashboard/cards";
 import { supabaseAdmin } from "@/lib/supabase";
+import { fetchTokenMetrics } from "@/lib/bankr";
 import {
   mockAgentStatus, mockCompositeSignal, mockMarketSignals,
   mockNewsItems, mockPolymarketSnapshots, mockDecisionLog,
@@ -36,6 +37,7 @@ async function getDashboardData() {
       { data: news },
       { data: polymarket },
       { data: decisions },
+      tokenMetrics,
     ] = await Promise.all([
       supabaseAdmin
         .from("agent_status_snapshots")
@@ -63,6 +65,7 @@ async function getDashboardData() {
         .select("*")
         .order("created_at", { ascending: false })
         .limit(5),
+      fetchTokenMetrics(),
     ]);
 
     return {
@@ -129,6 +132,7 @@ async function getDashboardData() {
         outcome: d.outcome,
         createdAt: d.created_at,
       })) : mockDecisionLog,
+      tokenMetrics,
     };
   } catch (err) {
     console.error("[Dashboard] Supabase error, using mock:", err);
@@ -138,6 +142,7 @@ async function getDashboardData() {
       newsItems: mockNewsItems,
       polymarketSnapshots: mockPolymarketSnapshots,
       decisionLog: mockDecisionLog,
+      tokenMetrics: mockTokenMetrics,
     };
   }
 }
@@ -197,7 +202,7 @@ export default async function DashboardPage() {
           <ChartAnalysisCard signals={data.marketSignals} />
           <NewsPulseCard news={data.newsItems} />
           <PolymarketContextCard markets={data.polymarketSnapshots} />
-          <TreasuryFeesCard />
+          <TreasuryFeesCard token={data.tokenMetrics} />
           <ComputeRunwayCard />
           <div className="md:col-span-2">
             <DecisionFeedCard decisions={data.decisionLog} />
