@@ -94,7 +94,7 @@ export function Footer() {
         {/* Bottom bar */}
         <div className="mt-16 pt-8 border-t border-aurum-bg-border/30 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <p className="text-aurum-text-dim text-xs font-mono">
-            © 2026 AURUM. Built with Bankr API.
+            © 2026 AURUM. Built with Anthropic, Polymarket, and public market data.
           </p>
           <div className="flex items-center gap-6">
             <span className="text-aurum-text-dim text-xs font-mono">

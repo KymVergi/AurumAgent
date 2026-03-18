@@ -16,7 +16,7 @@ import {
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "AURUM Terminal",
+  title: "Dashboard — AURUM Terminal",
   description: "Live AURUM agent terminal. Charts, news, prediction markets, and composite signal in real-time.",
 };
 
