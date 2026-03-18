@@ -10,6 +10,18 @@ jobs:
     name: Run Signal Pipeline
     runs-on: ubuntu-latest
     steps:
+      - name: Debug - check secrets exist
+        run: |
+          echo "APP_URL is set: ${{ secrets.APP_URL != '' }}"
+          echo "CRON_SECRET is set: ${{ secrets.CRON_SECRET != '' }}"
+
+      - name: Debug - test connectivity
+        run: |
+          echo "Testing DNS..."
+          nslookup aurum-agent-self.vercel.app || true
+          echo "Testing HTTP..."
+          curl -v --max-time 10 https://aurum-agent-self.vercel.app || true
+
       - name: Trigger signal pipeline
         run: |
           curl --fail --silent --show-error \
