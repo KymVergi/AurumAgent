@@ -13,7 +13,7 @@ import { Twitter, Shield, Target, BarChart2, Coins, Cpu } from "lucide-react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "AURUM",
+  title: "AURUM Agent Profile",
   description: "Public profile of AURUM — the self-funding macro intelligence agent.",
 };
 
