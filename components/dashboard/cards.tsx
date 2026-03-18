@@ -243,8 +243,8 @@ export function DecisionFeedCard({ decisions = mockDecisionLog }: { decisions?: 
 
 // ─── Treasury & Fees ───────────────────────────────────────────
 
-export function TreasuryFeesCard() {
-  const tok = mockTokenMetrics;
+export function TreasuryFeesCard({ token = mockTokenMetrics }: { token?: typeof mockTokenMetrics }) {
+  const tok = token;
   return (
     <Card>
       <CardHeader title="Treasury / Fees" icon={<Coins className="w-4 h-4" />} />
