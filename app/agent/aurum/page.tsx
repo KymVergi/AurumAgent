@@ -24,6 +24,7 @@ async function getAgentData() {
     const [
       { data: snapshot },
       { data: decisions },
+      { count: totalDecisions },
     ] = await Promise.all([
       supabaseAdmin
         .from("agent_status_snapshots")
@@ -36,6 +37,9 @@ async function getAgentData() {
         .select("*")
         .order("created_at", { ascending: false })
         .limit(5),
+      supabaseAdmin
+        .from("decision_logs")
+        .select("*", { count: "exact", head: true }),
     ]);
 
     return {
@@ -66,14 +70,15 @@ async function getAgentData() {
         outcome: d.outcome,
         createdAt: d.created_at,
       })) : mockDecisionLog,
+      totalDecisions: totalDecisions ?? mockDecisionLog.length,
     };
   } catch {
-    return { status: mockAgentStatus, decisions: mockDecisionLog };
+    return { status: mockAgentStatus, decisions: mockDecisionLog, totalDecisions: mockDecisionLog.length };
   }
 }
 
 export default async function AgentProfilePage() {
-  const { status, decisions } = await getAgentData();
+  const { status, decisions, totalDecisions } = await getAgentData();
   const token = mockTokenMetrics;
   const compute = mockComputeMetrics;
 
@@ -138,7 +143,7 @@ export default async function AgentProfilePage() {
                 <p className="text-xs font-mono text-aurum-text-dim mt-1">Confidence</p>
               </div>
               <div className="text-center p-4 rounded-lg border border-aurum-bg-border bg-aurum-bg-card">
-                <p className="text-xl font-display text-aurum-text-primary font-light">{decisions.length}</p>
+                <p className="text-xl font-display text-aurum-text-primary font-light">{totalDecisions}</p>
                 <p className="text-xs font-mono text-aurum-text-dim mt-1">Decisions</p>
               </div>
               <div className="text-center p-4 rounded-lg border border-aurum-bg-border bg-aurum-bg-card">
