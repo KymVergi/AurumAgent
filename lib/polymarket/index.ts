@@ -1,88 +1,65 @@
-// ─────────────────────────────────────────────────────────────
-// AURUM — Polymarket Adapter
-// Read-only public endpoint integration.
-// ─────────────────────────────────────────────────────────────
-
 import type { PolymarketSnapshot } from "@/types";
 import { mockPolymarketSnapshots } from "@/lib/mock-data";
 
 const USE_MOCK = false;
+const MACRO_KEYWORDS = ["Fed", "Bitcoin", "BTC", "CPI", "rate", "inflation", "ETH", "crypto", "recession", "dollar"];
 
-export interface PolymarketMarket {
-  id: string;
-  question: string;
-  outcomes: string[];
-  outcomePrices: string[];
-  volume: string;
-  liquidity: string;
-  active: boolean;
-  closed: boolean;
-}
-
-const MACRO_KEYWORDS = ["Fed", "Bitcoin", "BTC", "CPI", "recession", "rate", "crypto", "inflation", "ETH", "election"];
-
-export async function fetchPolymarketMacroMarkets(
-  limit = 10
-): Promise<PolymarketSnapshot[]> {
+export async function fetchPolymarketMacroMarkets(limit = 10): Promise<PolymarketSnapshot[]> {
   if (USE_MOCK) return mockPolymarketSnapshots;
 
-  // Try multiple endpoints in order
-  const endpoints = [
-    `https://gamma-api.polymarket.com/markets?active=true&closed=false&limit=50&_sort=volume&_order=desc`,
-    `https://clob.polymarket.com/markets?next_cursor=&limit=50`,
-  ];
-
-  for (const url of endpoints) {
-    try {
-      const res = await fetch(url, {
-        headers: {
-          "Accept": "application/json",
-          "User-Agent": "AURUM-Agent/1.0",
-        },
+  try {
+    // Gamma API — best for active markets sorted by volume
+    const res = await fetch(
+      "https://gamma-api.polymarket.com/markets?active=true&closed=false&limit=100&_sort=volume&_order=desc",
+      {
+        headers: { "Accept": "application/json", "User-Agent": "AURUM-Agent/1.0" },
         next: { revalidate: 300 },
-      });
+      }
+    );
 
-      if (!res.ok) continue;
+    if (!res.ok) throw new Error(`Polymarket API error: ${res.status}`);
 
-      const data = await res.json();
-      const markets: PolymarketMarket[] = Array.isArray(data) ? data : (data.markets ?? data.data ?? []);
+    const data = await res.json();
+    const markets = Array.isArray(data) ? data : (data.markets ?? data.data ?? []);
 
-      if (!markets.length) continue;
+    // Filter for macro-relevant active markets with real volume
+    const relevant = markets
+      .filter((m: any) =>
+        m.active &&
+        !m.closed &&
+        parseFloat(m.volume ?? "0") > 1000 &&
+        MACRO_KEYWORDS.some((k) => m.question?.toLowerCase().includes(k.toLowerCase()))
+      )
+      .slice(0, limit);
 
-      // Filter for macro-relevant markets
-      const relevant = markets.filter((m) =>
-        MACRO_KEYWORDS.some((k) =>
-          m.question?.toLowerCase().includes(k.toLowerCase())
-        )
-      );
-
-      const results = (relevant.length ? relevant : markets).slice(0, limit);
-
-      return results.map((m) => {
-        const prices = (m.outcomePrices ?? ["0.5", "0.5"]).map(Number);
-        const yesOdds = prices[0] ?? 0.5;
-        const noOdds = prices[1] ?? 1 - yesOdds;
-
-        return {
-          id: `pm_${m.id}`,
-          marketId: m.id,
-          question: m.question,
-          yesOdds,
-          noOdds,
-          volume: parseFloat(m.volume ?? "0"),
-          liquidity: parseFloat(m.liquidity ?? "0"),
-          relevanceScore: 70,
-          macroImplication: "Scoring via Anthropic layer",
-          snapshotAt: new Date().toISOString(),
-        };
-      });
-    } catch (err) {
-      console.error(`[AURUM Polymarket] Endpoint failed: ${url}`, err);
-      continue;
+    if (!relevant.length) {
+      console.warn("[AURUM Polymarket] No relevant markets found, using mock");
+      return mockPolymarketSnapshots;
     }
-  }
 
-  // All endpoints failed — return mock
-  console.warn("[AURUM Polymarket] All endpoints failed, using mock data");
-  return mockPolymarketSnapshots;
+    return relevant.map((m: any) => {
+      const prices = Array.isArray(m.outcomePrices)
+        ? m.outcomePrices.map(Number)
+        : [0.5, 0.5];
+      const yesOdds = prices[0] ?? 0.5;
+      const noOdds = prices[1] ?? (1 - yesOdds);
+      const id = m.id ?? m.marketId ?? m.conditionId ?? Math.random().toString(36).slice(2);
+
+      return {
+        id: `pm_${id}`,
+        marketId: String(id),
+        question: m.question,
+        yesOdds: Math.min(Math.max(yesOdds, 0), 1),
+        noOdds: Math.min(Math.max(noOdds, 0), 1),
+        volume: parseFloat(m.volume ?? "0"),
+        liquidity: parseFloat(m.liquidity ?? "0"),
+        relevanceScore: 70,
+        macroImplication: "Scoring via Anthropic layer",
+        snapshotAt: new Date().toISOString(),
+      };
+    });
+  } catch (err) {
+    console.error("[AURUM Polymarket] Failed:", err);
+    return mockPolymarketSnapshots;
+  }
 }
