@@ -2,15 +2,22 @@ import type { PolymarketSnapshot } from "@/types";
 import { mockPolymarketSnapshots } from "@/lib/mock-data";
 
 const USE_MOCK = false;
-const MACRO_KEYWORDS = ["Fed", "Bitcoin", "BTC", "CPI", "rate", "inflation", "ETH", "crypto", "recession", "dollar"];
 
-export async function fetchPolymarketMacroMarkets(limit = 10): Promise<PolymarketSnapshot[]> {
+// Keywords estrictamente macro — elimina crypto memes y deportes
+const MACRO_KEYWORDS = [
+  "Fed ", "federal reserve", "interest rate", "rate cut", "rate hike",
+  "CPI", "inflation", "recession", "GDP", "unemployment",
+  "Bitcoin price", "BTC price", "ETH price", "crypto market",
+  "dollar index", "treasury", "bond yield", "S&P", "nasdaq",
+  "Trump tariff", "election", "war", "geopolit",
+];
+
+export async function fetchPolymarketMacroMarkets(limit = 6): Promise<PolymarketSnapshot[]> {
   if (USE_MOCK) return mockPolymarketSnapshots;
 
   try {
-    // Gamma API — best for active markets sorted by volume
     const res = await fetch(
-      "https://gamma-api.polymarket.com/markets?active=true&closed=false&limit=100&_sort=volume&_order=desc",
+      "https://gamma-api.polymarket.com/markets?active=true&closed=false&limit=200&_sort=volume&_order=desc",
       {
         headers: { "Accept": "application/json", "User-Agent": "AURUM-Agent/1.0" },
         next: { revalidate: 300 },
@@ -18,42 +25,51 @@ export async function fetchPolymarketMacroMarkets(limit = 10): Promise<Polymarke
     );
 
     if (!res.ok) throw new Error(`Polymarket API error: ${res.status}`);
-
     const data = await res.json();
     const markets = Array.isArray(data) ? data : (data.markets ?? data.data ?? []);
 
-    // Filter for macro-relevant active markets with real volume
-    const relevant = markets
-      .filter((m: any) =>
-        m.active &&
-        !m.closed &&
-        parseFloat(m.volume ?? "0") > 1000 &&
-        MACRO_KEYWORDS.some((k) => m.question?.toLowerCase().includes(k.toLowerCase()))
+    // Filter strictly macro markets with real volume
+    const relevant = markets.filter((m: any) =>
+      m.active &&
+      !m.closed &&
+      parseFloat(m.volume ?? "0") > 10000 &&
+      MACRO_KEYWORDS.some((k) =>
+        m.question?.toLowerCase().includes(k.toLowerCase())
       )
-      .slice(0, limit);
+    ).slice(0, limit);
 
     if (!relevant.length) {
-      console.warn("[AURUM Polymarket] No relevant markets found, using mock");
+      console.warn("[AURUM Polymarket] No macro markets found, using mock");
       return mockPolymarketSnapshots;
     }
 
     return relevant.map((m: any) => {
-      const prices = Array.isArray(m.outcomePrices)
-        ? m.outcomePrices.map(Number)
-        : [0.5, 0.5];
-      const yesOdds = prices[0] ?? 0.5;
-      const noOdds = prices[1] ?? (1 - yesOdds);
-      const id = m.id ?? m.marketId ?? m.conditionId ?? Math.random().toString(36).slice(2);
+      // Gamma API uses bestBid/bestAsk or outcomes array for prices
+      let yesOdds = 0.5;
+      let noOdds = 0.5;
+
+      if (m.outcomePrices && Array.isArray(m.outcomePrices)) {
+        const prices = m.outcomePrices.map(Number).filter((n: number) => !isNaN(n));
+        if (prices.length >= 2) { yesOdds = prices[0]; noOdds = prices[1]; }
+      } else if (m.bestBid) {
+        yesOdds = parseFloat(m.bestBid);
+        noOdds = 1 - yesOdds;
+      } else if (m.lastTradePrice) {
+        yesOdds = parseFloat(m.lastTradePrice);
+        noOdds = 1 - yesOdds;
+      }
+
+      const id = m.id ?? m.conditionId ?? Math.random().toString(36).slice(2);
 
       return {
         id: `pm_${id}`,
         marketId: String(id),
         question: m.question,
-        yesOdds: Math.min(Math.max(yesOdds, 0), 1),
-        noOdds: Math.min(Math.max(noOdds, 0), 1),
+        yesOdds: Math.min(Math.max(yesOdds, 0.01), 0.99),
+        noOdds: Math.min(Math.max(noOdds, 0.01), 0.99),
         volume: parseFloat(m.volume ?? "0"),
         liquidity: parseFloat(m.liquidity ?? "0"),
-        relevanceScore: 70,
+        relevanceScore: 75,
         macroImplication: "Scoring via Anthropic layer",
         snapshotAt: new Date().toISOString(),
       };
