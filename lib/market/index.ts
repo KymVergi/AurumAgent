@@ -8,7 +8,7 @@ import { mockNewsItems, mockBTCBars } from "@/lib/mock-data";
 
 const FINNHUB_BASE = "https://finnhub.io/api/v1";
 const API_KEY = process.env.FINNHUB_API_KEY ?? "";
-const USE_MOCK = !API_KEY;
+const USE_MOCK = !API_KEY || process.env.NODE_ENV === "development";
 
 // ─── Market News ──────────────────────────────────────────────
 

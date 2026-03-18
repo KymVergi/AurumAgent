@@ -7,7 +7,7 @@ import type { PolymarketSnapshot } from "@/types";
 import { mockPolymarketSnapshots } from "@/lib/mock-data";
 
 const POLYMARKET_BASE = "https://gamma-api.polymarket.com";
-const USE_MOCK = false; // set to false to use real endpoints
+const USE_MOCK = process.env.NODE_ENV === "development"; // set to false to use real endpoints
 
 export interface PolymarketMarket {
   id: string;
