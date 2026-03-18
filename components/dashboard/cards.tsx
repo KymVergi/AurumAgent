@@ -264,7 +264,7 @@ export function TreasuryFeesCard() {
 
 export function ComputeRunwayCard() {
   const comp = mockComputeMetrics;
-  const runwayPct = Math.min((comp.runwayDays / 365) * 100, 100);
+  const runwayPct = Math.round(Math.min((comp.runwayDays / 365) * 100, 100));
   return (
     <Card>
       <CardHeader title="Compute Runway" icon={<Cpu className="w-4 h-4" />} />

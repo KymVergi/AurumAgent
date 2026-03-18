@@ -22,7 +22,7 @@ import {
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Dashboard",
+  title: "AURUM",
   description: "Live AURUM agent terminal.",
 };
 
