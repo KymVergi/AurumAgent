@@ -90,7 +90,7 @@ export default async function ThesisPage() {
             </h2>
 
             <div className="space-y-5">
-              {thesis.body.split("\n\n").filter(Boolean).map((para, i) => (
+              {thesis.body.split("\n\n").filter(Boolean).map((para: string, i: number) => (
                 <p key={i} className="text-aurum-text-secondary leading-relaxed text-base">{para}</p>
               ))}
             </div>

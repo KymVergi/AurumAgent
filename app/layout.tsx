@@ -4,16 +4,16 @@ import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://aurumagent.xyz"),
   title: {
-    default: "AURUM — The Self-Funding Macro Agent",
+    default: "AURUM",
     template: "%s | AURUM",
   },
   description:
     "AURUM is a public AI macro agent. Charts. News. Odds. Conviction. Token-powered intelligence for macro markets.",
   keywords: ["AURUM", "macro agent", "AI trading", "Polymarket", "prediction markets", "macro intelligence"],
   openGraph: {
-    title: "AURUM — The Self-Funding Macro Agent",
+    title: "AURUM",
     description: "A public AI agent that studies markets before it acts.",
-    url: "https://aurum.agent",
+    url: "https://aurumagent.xyz",
     siteName: "AURUM",
     type: "website",
     images: [{ url: "/images/og.png", width: 1200, height: 630 }],
