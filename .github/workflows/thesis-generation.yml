@@ -1,0 +1,28 @@
+name: AURUM Thesis Generation
+
+on:
+  schedule:
+    # Every 6 hours
+    - cron: "0 */6 * * *"
+  # Allow manual trigger from GitHub Actions tab
+  workflow_dispatch:
+
+jobs:
+  generate-thesis:
+    name: Generate Public Thesis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger thesis generation
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X GET "${{ secrets.APP_URL }}/api/cron/thesis" \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}")
+          echo "Thesis generation response: $response"
+          if [ "$response" != "200" ]; then
+            echo "Thesis generation failed with status $response"
+            exit 1
+          fi
+
+      - name: Log result
+        if: success()
+        run: echo "✅ Thesis generated at $(date -u)"

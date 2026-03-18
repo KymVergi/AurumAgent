@@ -1,0 +1,28 @@
+name: AURUM Signal Pipeline
+
+on:
+  schedule:
+    # Every 15 minutes
+    - cron: "*/15 * * * *"
+  # Allow manual trigger from GitHub Actions tab
+  workflow_dispatch:
+
+jobs:
+  run-signal-pipeline:
+    name: Run Signal Pipeline
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger signal pipeline
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X GET "${{ secrets.APP_URL }}/api/cron/signal" \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}")
+          echo "Signal pipeline response: $response"
+          if [ "$response" != "200" ]; then
+            echo "Pipeline failed with status $response"
+            exit 1
+          fi
+
+      - name: Log result
+        if: success()
+        run: echo "✅ Signal pipeline completed at $(date -u)"
